@@ -1,0 +1,6 @@
+icalendar>=5.0
+python-frontmatter>=1.1
+python-dotenv>=1.0
+requests>=2.31
+anthropic>=0.69
+youtube-transcript-api>=1.0

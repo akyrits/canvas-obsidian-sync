@@ -121,9 +121,36 @@ python agent.py ask "what's due this week?"
 python agent.py new-lecture M10A_linkedlists.pdf --course "COP3410C 042 12962"
 ```
 
-Model: `claude-sonnet-5` throughout — deliberately not Opus, since this runs
-against a real student's actual daily usage and cost matters more here than
-squeezing out marginal quality on a task like "outline this assignment."
+## Cost
+
+This runs against a real student's actual daily usage, not a demo, so cost
+was a design constraint from the start rather than an afterthought.
+
+**Model: `claude-sonnet-5` throughout, not Opus.** At list price Sonnet 5 is
+$3 / $15 per million input/output tokens versus $5 / $25 for Opus 4.8 — and
+Anthropic's Sonnet 5 introductory pricing ($2 / $10 per MTok through
+2026-08-31) narrows the gap further. None of the five commands (`prep`,
+`ask`, `setup-course`, `transcript`, `check-files`) need Opus-tier reasoning:
+outlining an assignment, answering "what's due this week," or transcribing a
+video are bounded, well-specified tasks, not open-ended research. Sonnet is
+the right tier for that shape of work, not a compromise.
+
+**Prompt caching and the Batch API were deliberately not adopted.** Both are
+real levers — cached tokens cost roughly a tenth as much on a hit, and Batch
+API requests run at 50% off — but both pay off on *volume*: caching needs a
+large, stable prefix reused across many requests, and Batch API is for
+bulk/non-interactive jobs. A student running `prep` on a handful of
+assignments a week doesn't generate that volume, so reaching for either here
+would be complexity added for a discount that never materializes. If this
+ever became a multi-course, prep-everything-at-once workflow (e.g. batch
+`prep` runs at the start of a semester), Batch API would be the first thing
+to add.
+
+**No hard usage numbers are published here** — this is a single-user tool,
+not a metered product, and log-scraping a personal API bill isn't worth the
+readme space. The bounded, per-command nature of every call (a few thousand
+tokens in, a few hundred to a couple thousand out) is what keeps this cheap
+in practice, not caching or batching tricks.
 
 ## Design decisions worth calling out
 

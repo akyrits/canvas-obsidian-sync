@@ -74,6 +74,35 @@ def cmd_setup_course(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_new_lecture(args: argparse.Namespace) -> int:
+    course_path = config.ASSIGNMENTS_ROOT / args.course
+    pdf_path = course_path / "Attachments" / args.pdf
+    if not pdf_path.exists():
+        print(f"No PDF found at {pdf_path}")
+        print(f"(looking for '{args.pdf}' inside {course_path / 'Attachments'})")
+        return 1
+
+    lectures_folder = course_path / "Lectures"
+    lectures_folder.mkdir(parents=True, exist_ok=True)
+
+    title = args.title or pdf_path.stem
+    note_path = lectures_folder / f"{title}.md"
+    if note_path.exists():
+        print(f"Lecture note already exists: {note_path}")
+        return 1
+
+    post = frontmatter.Post(
+        f"# {title}\n\n![[{pdf_path.name}]]\n\n## Study Notes\n",
+        course=args.course,
+        source="pdf",
+        source_file=pdf_path.name,
+        created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    )
+    note_path.write_text(frontmatter.dumps(post), encoding="utf-8")
+    print(f"Created: {note_path}")
+    return 0
+
+
 def cmd_prep(args: argparse.Namespace) -> int:
     _require_api_key()
 
@@ -239,6 +268,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_check.add_argument("course", help="Course folder name under School/")
     p_check.set_defaults(func=cmd_check_files)
+
+    p_lecture = subparsers.add_parser("new-lecture", help="Create a study note for a PDF lecture")
+    p_lecture.add_argument("pdf", help="PDF filename inside this course's Attachments/ folder")
+    p_lecture.add_argument("--course", required=True, help="Course folder name under School/")
+    p_lecture.add_argument("--title", help="Lecture note title (defaults to the PDF's filename)")
+    p_lecture.set_defaults(func=cmd_new_lecture)
 
     return parser
 

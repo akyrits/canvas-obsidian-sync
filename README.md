@@ -1,45 +1,87 @@
-# Canvas → Obsidian Sync
+# Canvas → Obsidian Study System
 
-Pulls assignment due dates from Canvas (via your personal iCal feed) into your
-Obsidian vault: one note per assignment, plus a card on a Kanban board. Your
-vault stays the single source of truth — this script only ever adds
-information, it never overwrites notes you've written or cards you've moved.
+A daily-syncing bridge between Canvas LMS and Obsidian, plus a small
+Claude-powered study agent layered on top. Built as a portfolio project to
+explore what an LLM agent can actually do against a real, personal dataset —
+my own coursework — instead of a toy demo.
+
+This repo is the code only. The actual Obsidian vault (notes, PDFs,
+coursework) lives in a separate private repository, since it contains real
+academic content.
 
 ## What it does
 
-1. Fetches your Canvas calendar feed (ICS format).
-2. For each assignment, creates or updates a note under `School/<Course>/` in
-   your vault. Only the frontmatter (course, due date, links) is rewritten on
-   each run — the body of the note is written once, at creation, and never
-   touched again.
-3. Ensures a card linking to that note exists on `Boards/Assignments.md`
-   (rendered as a drag-and-drop board by the Kanban plugin) — in "This Week"
-   if due soon, otherwise "Backlog". Cards you've already moved, or personal
-   tasks you've typed in by hand, are left exactly where they are.
+**Sync** (`sync.py`) — pulls assignment due dates from a Canvas calendar feed
+and creates/updates one Obsidian note per assignment, with a matching card on
+a Kanban board. Runs on a schedule (Windows Task Scheduler, every 24h) with no
+manual intervention.
+
+**Study agent** (`agent.py`) — a CLI on top of the synced vault that:
+
+- generates a step-by-step outline + key-concepts explanation for any
+  assignment, grounded in that course's actual textbook and live web search
+  rather than invented sources
+- answers ad-hoc questions about synced tasks ("what's due this week in my CS
+  classes?") through Claude's tool-calling loop
+- fetches YouTube lecture transcripts and saves them as notes
+- scaffolds a dedicated study note for a professor-provided PDF lecture, ready
+  for PDF++ annotation
+
+Both pieces treat the vault as the single source of truth: automation only
+ever adds information or refreshes fields it owns — it never overwrites a
+note body, a status you changed, or a card you dragged.
+
+## Why it exists
+
+Canvas exposes an ICS calendar feed with no login required, but this school's
+Canvas instance has personal access token generation disabled at the admin
+level, so there's no way to pull assignment descriptions or attached files
+through the full REST API. Rather than stall on that, the agent leans into
+the constraint: it works from what a student can plausibly gather by hand
+(the title/due date from the feed, a one-time textbook/topics blurb per
+course, PDFs saved off Canvas manually) plus live web search, instead of
+assuming perfect scraped context. That's closer to how an agent actually has
+to behave in most permission-constrained real-world settings anyway.
+
+## Architecture
+
+```
+canvas-obsidian-sync/
+├── sync.py              # entrypoint: ICS feed -> vault notes + Kanban board
+├── canvas_ics.py         # ICS feed parsing
+├── vault_notes.py        # note upsert logic (machine-owned vs user-owned fields)
+├── kanban_board.py        # Kanban card sync
+├── config.py             # env-driven config
+├── agent.py              # entrypoint: study agent CLI
+└── agent/
+    ├── cli.py            # subcommands: setup-course, prep, ask, transcript, check-files, new-lecture
+    ├── vault_query.py    # reads tasks/notes out of the vault
+    ├── vault_write.py    # header-scoped note section writes (never touches other sections)
+    ├── tools.py          # @beta_tool definitions exposed to the agent's tool-calling loop
+    └── transcripts.py    # YouTube transcript fetching
+```
 
 ## Setup
 
 ### 1. Obsidian plugins
 
-Install these from Settings → Community Plugins in Obsidian, if you haven't
-already:
-
 - **[Kanban](https://github.com/mgmeyers/obsidian-kanban)** — renders
-  `Boards/Assignments.md` as a board instead of raw markdown.
-- **[Git](https://github.com/vinzent03/obsidian-git)** — auto-commits and
-  pushes/pulls your vault's git repo, which is what makes it available across
-  your different PCs. Point it at a GitHub repo for your vault; on your other
-  machines, just clone that repo as the vault folder and let the plugin sync
-  it.
+  `Boards/Assignments.md` as a drag-and-drop board.
+- **[Git](https://github.com/vinzent03/obsidian-git)** — auto-commits/pushes
+  the vault repo so it stays in sync across machines.
+- **[TaskNotes](https://github.com/callumalpass/tasknotes)** — calendar and
+  time-blocking view over the same synced frontmatter (`due`, `status`,
+  `priority`, `task` tag).
+- **[PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus)** — annotate
+  lecture PDFs and pull highlights into notes as backlinked callouts.
 
 ### 2. Get your Canvas ICS feed URL
 
-In Canvas: **Calendar → Calendar Feed** (also under Account → Settings). It
-looks like `https://<school>.instructure.com/feeds/calendars/user_....ics`.
-This URL is a bearer credential — anyone who has it can read your calendar —
-so it only ever goes in `.env`, never in a commit.
+Canvas → Calendar → Calendar Feed (also under Account → Settings). Treat this
+URL like a password — anyone with it can read your calendar — so it only
+ever goes in `.env`, never in a commit.
 
-### 3. Install and configure
+### 3. Install
 
 ```
 python -m venv .venv
@@ -48,70 +90,79 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-(The venv keeps these dependencies separate from anything else on your
-machine — you'll need to run the `activate` line again in any new terminal
-before running `sync.py`.)
+Fill in `.env`: `CANVAS_ICS_URL`, `VAULT_PATH` (absolute path to your vault
+on this machine), and — only if you want the agent — `ANTHROPIC_API_KEY`.
 
-Edit `.env`: paste in your `CANVAS_ICS_URL`, and set `VAULT_PATH` to your
-vault's absolute path on this machine (this one value is the only thing
-you'll need to change per-PC, since the vault path may differ across
-machines).
-
-### 4. Run it
+### 4. Run
 
 ```
 python sync.py
 ```
 
-Run it manually at first. Once you trust it, put it on a schedule (Windows
-Task Scheduler → run `python sync.py` every hour or so) so your board stays
-current without you remembering to run it.
+Run it manually at first. Once you trust it, put it on a schedule (Task
+Scheduler → run `python sync.py` daily) so the vault stays current without
+you remembering to run it.
 
-## Key concepts (this is a learning project — here's the "why" behind each choice)
+## Agent commands
 
-**Idempotent syncing.** The script matches assignments by a `canvas_uid`
-stored in frontmatter, not by note title or file path. Run it 1 time or 100
-times against the same feed and you get the same result — no duplicate notes,
-no duplicate cards. This matters because the script *will* be re-run
-constantly (every sync), so "what happens if this runs twice" has to be
-designed for from the start, not patched in later.
+| Command | What it does |
+|---|---|
+| `setup-course <course>` | One-time interactive prompt for a course's textbook/topics, saved to `_Course Info.md` |
+| `prep <assignment>` | Writes `## How to Approach This` + `## Key Concepts` on a synced assignment note, using web search and that course's textbook context |
+| `ask <question>` | Answers a free-form question against your synced tasks, via Claude's tool-calling loop |
+| `transcript <youtube-url> --course --title` | Fetches a lecture transcript and saves it as a note |
+| `new-lecture <pdf> --course [--title]` | Scaffolds a dedicated study note for a PDF lecture already saved under that course's `Attachments/` folder |
+| `check-files <course>` | Diffs a pasted Canvas file listing against what's saved locally, to catch missing downloads |
 
-**Machine-owned vs. user-owned content.** Frontmatter is fully regenerated
-every run; the note body is written once and never again. That split is what
-makes it safe to automate at all — without it, every sync would risk
-overwriting notes you'd actually written. The Kanban board follows the same
-rule at a coarser grain: the script only *appends* new cards, it never
-rewrites existing lines, so your manual drag-and-drop organization survives
-indefinitely.
+```
+python agent.py setup-course "COP3410C 042 12962"
+python agent.py prep "LinkedList Worksheet"
+python agent.py ask "what's due this week?"
+python agent.py new-lecture M10A_linkedlists.pdf --course "COP3410C 042 12962"
+```
 
-**Secrets belong in `.env`, never in code or git.** `CANVAS_ICS_URL` is
-effectively a password (it grants read access to your calendar). `.env` is
-git-ignored specifically so a `git push` can never leak it — this is the same
-pattern you'll see in essentially every real-world project.
+Model: `claude-sonnet-5` throughout — deliberately not Opus, since this runs
+against a real student's actual daily usage and cost matters more here than
+squeezing out marginal quality on a task like "outline this assignment."
 
-**Markdown + YAML frontmatter as a data format.** Obsidian notes are plain
-text with a structured YAML header. That's what makes this whole approach
-possible: the script can parse and edit notes with simple text/YAML
-libraries, no proprietary format or API to reverse-engineer. This is also why
-Dataview, Kanban, and dozens of other Obsidian plugins can all interoperate —
-they agree on frontmatter as the shared interchange format.
+## Design decisions worth calling out
 
-**Where this hits its limits (by design).** The ICS feed only exposes titles
-and due dates - not assignment descriptions or attached files (PDFs, .py,
-.docx). Getting those requires the authenticated Canvas REST API, which is a
-meaningfully bigger step (auth token, HTML parsing, file downloads). Rather
-than half-build that now, the note template already has a `## Resources`
-section reserved for it — see **Phase 2** below.
+**Idempotent, frontmatter-keyed sync.** Assignments are matched by a
+`canvas_uid` stored in frontmatter, not by title or file path — running
+`sync.py` once or a hundred times against the same feed produces the same
+result. It has to be designed this way from the start since it's re-run on
+every scheduled sync, not patched in after the fact.
 
-## Phase 2 (not built yet)
+**Machine-owned vs. user-owned fields.** Note frontmatter splits into fields
+refreshed every sync (`due`, `canvas_url`, `synced_at`, ...) and fields set
+once at creation and never touched again (`status`, `priority`) — so marking
+a task done in TaskNotes, or moving a Kanban card, is never silently reverted
+by the next sync.
 
-Use the Canvas REST API (personal access token) to pull each assignment's
-`description` HTML, cross-reference the Modules API for chapter/week
-context, detect any linked files, download them into a per-assignment
-`Attachments/` folder, and populate `## Resources` in the note.
+**Header-scoped writes.** The agent's `prep` command rewrites only the
+`## How to Approach This` / `## Key Concepts` sections it owns
+(`vault_write.set_section`) — content under `## Notes` is left alone,
+verified by re-running `prep` against a note with real user-written content
+and confirming it survives unchanged.
 
-## Phase 3 (later)
+**No fabricated quotes.** `prep`'s prompt explicitly bans quoting anything
+attributed to the course textbook, since a paid textbook's exact wording
+can't be verified through web search. An early version only said "quote
+sparingly," which still produced a confidently-fabricated quote — banning
+quotation marks entirely for textbook-attributed content was what actually
+fixed it.
 
-An LLM layer on top: summarizing the pulled resources, breaking an assignment
-into subtasks, or answering questions like "what's due this week in my CS
-classes" against the synced data.
+**PDFs live outside git.** Lecture PDFs are synced onto disk via a Windows
+directory junction into an existing OneDrive folder, and `*.pdf` is
+git-ignored in the vault repo. Obsidian/PDF++ can still embed and annotate
+them locally, OneDrive handles cross-device sync, and the git repo never
+bloats with binaries.
+
+## Known limitations
+
+- Canvas's ICS feed doesn't include assignment descriptions or attachments —
+  see "Why it exists" above. PDFs currently have to be saved off Canvas by
+  hand into each course's `Attachments/` folder.
+- Zoom/Panopto/Kaltura-embedded lecture transcripts aren't supported yet,
+  only standalone YouTube URLs.
+- No mobile Obsidian sync — intentionally out of scope for now.

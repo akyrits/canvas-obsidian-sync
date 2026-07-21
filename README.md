@@ -26,6 +26,9 @@ manual intervention.
 - fetches YouTube lecture transcripts and saves them as notes
 - scaffolds a dedicated study note for a professor-provided PDF lecture, ready
   for PDF++ annotation
+- scaffolds a study note per Canvas module for courses that don't publish a
+  clean lecture-deck PDF - any mix of readings (or none yet, if the module
+  hasn't opened), addable incrementally as material unlocks
 
 Both pieces treat the vault as the single source of truth: automation only
 ever adds information or refreshes fields it owns — it never overwrites a
@@ -54,7 +57,7 @@ canvas-obsidian-sync/
 ├── config.py             # env-driven config
 ├── agent.py              # entrypoint: study agent CLI
 └── agent/
-    ├── cli.py            # subcommands: setup-course, prep, ask, transcript, check-files, new-lecture
+    ├── cli.py            # subcommands: setup-course, prep, ask, transcript, check-files, new-lecture, new-module
     ├── vault_query.py    # reads tasks/notes out of the vault
     ├── vault_write.py    # header-scoped note section writes (never touches other sections)
     ├── tools.py          # @beta_tool definitions exposed to the agent's tool-calling loop
@@ -112,6 +115,7 @@ you remembering to run it.
 | `ask <question>` | Answers a free-form question against your synced tasks, via Claude's tool-calling loop |
 | `transcript <youtube-url> --course --title` | Fetches a lecture transcript and saves it as a note |
 | `new-lecture <pdf> --course [--title]` | Scaffolds a dedicated study note for a PDF lecture already saved under that course's `Attachments/` folder |
+| `new-module <module> --course [--files] [--title]` | Scaffolds (or updates) a study note for a Canvas module - zero or more readings, addable incrementally as they unlock |
 | `check-files <course>` | Diffs a pasted Canvas file listing against what's saved locally, to catch missing downloads |
 
 ```
@@ -119,6 +123,7 @@ python agent.py setup-course "COP3410C 042 12962"
 python agent.py prep "LinkedList Worksheet"
 python agent.py ask "what's due this week?"
 python agent.py new-lecture M10A_linkedlists.pdf --course "COP3410C 042 12962"
+python agent.py new-module "Module 9" --course "CJE4663 001 11907" --files "Telep & Weisburd.pdf"
 ```
 
 ## Cost
@@ -184,6 +189,21 @@ directory junction into an existing OneDrive folder, and `*.pdf` is
 git-ignored in the vault repo. Obsidian/PDF++ can still embed and annotate
 them locally, OneDrive handles cross-device sync, and the git repo never
 bloats with binaries.
+
+**"Lecture" vs. "module" study notes.** `new-lecture` assumes a clean,
+uniform per-module PDF slide deck — true for a course like Data Structures,
+where every module has exactly one downloadable deck. It doesn't generalize:
+other courses organize content into Canvas "modules" that bundle a few
+chapters plus other material under a placeholder title, with no slide deck
+at all - readings, case studies, or nothing yet, since some professors don't
+open a module's materials until that portion of the syllabus starts. `new-module`
+handles that shape instead: it's keyed by the module name rather than a
+filename, accepts zero or more attachments of any type, and re-running it
+later with newly available files appends them to `## Materials` via the same
+header-scoped write `prep` uses - so a module note can be created the moment
+it appears in Canvas, empty, and filled in incrementally as the professor
+uploads material, without ever touching whatever the student has already
+written under `## Study Notes`.
 
 ## Known limitations
 

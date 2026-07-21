@@ -8,6 +8,7 @@ import anthropic
 import frontmatter
 
 import config
+from vault_notes import _sanitize_filename
 
 from . import transcripts, vault_query, vault_write
 from .tools import get_tasks
@@ -96,6 +97,66 @@ def cmd_new_lecture(args: argparse.Namespace) -> int:
         course=args.course,
         source="pdf",
         source_file=pdf_path.name,
+        created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    )
+    note_path.write_text(frontmatter.dumps(post), encoding="utf-8")
+    print(f"Created: {note_path}")
+    return 0
+
+
+def _material_line(filename: str) -> str:
+    """Embed PDFs (Obsidian renders them inline for PDF++ annotation);
+    everything else - docx, pptx, txt - just gets a clickable link, since
+    Obsidian can't embed those formats.
+    """
+    return f"![[{filename}]]" if filename.lower().endswith(".pdf") else f"[[{filename}]]"
+
+
+def cmd_new_module(args: argparse.Namespace) -> int:
+    course_path = config.ASSIGNMENTS_ROOT / args.course
+    if not course_path.exists():
+        print(f"No course folder found at {course_path}")
+        return 1
+
+    modules_folder = course_path / "Modules"
+    modules_folder.mkdir(parents=True, exist_ok=True)
+
+    title = args.title or args.module
+    note_path = modules_folder / f"{_sanitize_filename(title)}.md"
+
+    requested = [f.strip() for f in (args.files or "").split(",") if f.strip()]
+    for filename in requested:
+        file_path = course_path / "Attachments" / filename
+        if not file_path.exists():
+            print(f"Note: '{filename}' isn't in {course_path / 'Attachments'} yet - listing it anyway")
+
+    if note_path.exists():
+        post = frontmatter.load(note_path)
+        existing = post.get("source_files") or []
+        new_files = [f for f in requested if f not in existing]
+        if not new_files:
+            print(f"Already up to date: {note_path}")
+            return 0
+        all_files = existing + new_files
+        materials = "\n".join(f"- {_material_line(f)}" for f in all_files)
+        vault_write.set_section(note_path, "Materials", materials)
+        post = frontmatter.load(note_path)
+        post["source_files"] = all_files
+        note_path.write_text(frontmatter.dumps(post), encoding="utf-8")
+        print(f"Updated: {note_path} (added {', '.join(new_files)})")
+        return 0
+
+    materials = (
+        "\n".join(f"- {_material_line(f)}" for f in requested)
+        if requested
+        else "*(nothing uploaded yet - re-run with --files once this module opens)*"
+    )
+    post = frontmatter.Post(
+        f"# {title}\n\n## Materials\n{materials}\n\n## Study Notes\n",
+        course=args.course,
+        type="module",
+        module=args.module,
+        source_files=requested,
         created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
     note_path.write_text(frontmatter.dumps(post), encoding="utf-8")
@@ -274,6 +335,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_lecture.add_argument("--course", required=True, help="Course folder name under School/")
     p_lecture.add_argument("--title", help="Lecture note title (defaults to the PDF's filename)")
     p_lecture.set_defaults(func=cmd_new_lecture)
+
+    p_module = subparsers.add_parser(
+        "new-module",
+        help="Create (or update) a study note for a Canvas module - any mix of readings, or none yet",
+    )
+    p_module.add_argument("module", help="Module name, e.g. 'Module 9'")
+    p_module.add_argument("--course", required=True, help="Course folder name under School/")
+    p_module.add_argument(
+        "--files",
+        help="Comma-separated filenames inside this course's Attachments/ folder (optional - "
+        "omit if the module hasn't opened yet). Re-run with --files later to add newly "
+        "uploaded material without touching your existing Study Notes.",
+    )
+    p_module.add_argument("--title", help="Module note title (defaults to the module name)")
+    p_module.set_defaults(func=cmd_new_module)
 
     return parser
 

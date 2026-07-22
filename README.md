@@ -112,7 +112,7 @@ you remembering to run it.
 |---|---|
 | `setup-course <course>` | One-time interactive prompt for a course's textbook/topics, saved to `_Course Info.md` |
 | `prep <assignment>` | Writes `## How to Approach This` + `## Key Concepts` on a synced assignment note, using web search and that course's textbook context |
-| `ask <question>` | Answers a free-form question against your synced tasks, via Claude's tool-calling loop |
+| `ask <question>` | Answers a free-form question against your synced tasks, via Claude's tool-calling loop. If a LifeOS MCP server is configured (see below), it also reasons over your live schedule — "what's open, and when am I free to work on it?" |
 | `transcript <youtube-url> --course --title` | Fetches a lecture transcript and saves it as a note |
 | `new-lecture <pdf> --course [--title]` | Scaffolds a dedicated study note for a PDF lecture already saved under that course's `Attachments/` folder |
 | `new-module <module> --course [--files] [--title]` | Scaffolds (or updates) a study note for a Canvas module - zero or more readings, addable incrementally as they unlock |
@@ -124,7 +124,23 @@ python agent.py prep "LinkedList Worksheet"
 python agent.py ask "what's due this week?"
 python agent.py new-lecture M10A_linkedlists.pdf --course "COP3410C 042 12962"
 python agent.py new-module "Module 9" --course "CJE4663 001 11907" --files "Telep & Weisburd.pdf"
+python agent.py ask "what's still open, and when am I free today to work on it?"
 ```
+
+### Optional: connect a LifeOS schedule (MCP)
+
+`ask` is vault-only by default. Point it at a running [LifeOS](https://github.com/akyrits/lifeos)
+MCP server and the same question can also see your live schedule — free
+windows, fixed blocks, daily focus — so it answers *when* to do the work, not
+just *what* is due. This is a bridge to a separate project, never a hard
+dependency: leave the two variables unset and `ask` stays exactly as before.
+
+Set `LIFEOS_MCP_URL` and `LIFEOS_MCP_TOKEN` in `.env` (the token is LifeOS's
+`LIFEOS_MCP_TOKEN`; treat it like a password — it reads all your tasks). Under
+the hood, `ask` passes the server to the Messages API as a server-side MCP
+connector (`mcp_servers` + an `mcp_toolset` entry, `mcp-client-2025-11-20`
+beta), so Anthropic connects to LifeOS directly with the bearer token and the
+model calls its read-only tools in the same loop as the local vault tool.
 
 ## Cost
 

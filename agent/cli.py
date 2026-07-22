@@ -249,13 +249,35 @@ Format your response exactly as:
 def cmd_ask(args: argparse.Namespace) -> int:
     _require_api_key()
 
+    # Local vault tool is always available. When a LifeOS MCP server is
+    # configured, attach it as a server-side connector so the same question can
+    # reason over the live schedule too - the API reaches LifeOS directly with
+    # the bearer token and executes its read-only tools. The mcp-client beta
+    # requires each server be named in `tools` via an mcp_toolset entry.
+    tools: list = [get_tasks]
+    extra: dict = {}
+    if config.LIFEOS_MCP_URL and config.LIFEOS_MCP_TOKEN:
+        extra = {
+            "betas": ["mcp-client-2025-11-20"],
+            "mcp_servers": [
+                {
+                    "type": "url",
+                    "url": config.LIFEOS_MCP_URL,
+                    "name": "lifeos",
+                    "authorization_token": config.LIFEOS_MCP_TOKEN,
+                }
+            ],
+        }
+        tools.append({"type": "mcp_toolset", "mcp_server_name": "lifeos"})
+
     client = anthropic.Anthropic()
     runner = client.beta.messages.tool_runner(
         model=MODEL,
         max_tokens=2000,
         thinking={"type": "adaptive"},
-        tools=[get_tasks],
+        tools=tools,
         messages=[{"role": "user", "content": args.question}],
+        **extra,
     )
 
     final_message = None

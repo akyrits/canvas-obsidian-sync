@@ -21,3 +21,12 @@ VAULT_PATH = Path(_require("VAULT_PATH"))
 BOARD_PATH = VAULT_PATH / os.environ.get("BOARD_RELATIVE_PATH", "Boards/Assignments.md")
 ASSIGNMENTS_ROOT = VAULT_PATH / os.environ.get("ASSIGNMENTS_RELATIVE_DIR", "School")
 DUE_SOON_DAYS = int(os.environ.get("DUE_SOON_DAYS", "7"))
+
+# Optional: a running LifeOS MCP server (the read-only tasks/schedule reader).
+# When both are set, the `ask` command connects to it so answers can cross a
+# vault assignment against the live schedule ("what's open, and when am I free
+# for it?"). Absent, `ask` stays vault-only - this is a bridge to a separate
+# project, never a hard dependency. The token is LifeOS's LIFEOS_MCP_TOKEN;
+# keep it here rather than reaching into that repo's files.
+LIFEOS_MCP_URL = os.environ.get("LIFEOS_MCP_URL")
+LIFEOS_MCP_TOKEN = os.environ.get("LIFEOS_MCP_TOKEN")

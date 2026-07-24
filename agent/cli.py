@@ -47,6 +47,29 @@ def _split_response(text: str) -> tuple[str, str, str]:
     )
 
 
+def _extract_section(content: str, header: str) -> str:
+    """Return the text under `## {header}` (up to the next `## ` or EOF), or "".
+
+    Used to pull the Canvas-scraped assignment description back out of the note
+    so prep can ground its output in the real task instead of just the title.
+    Placeholder comment lines (`<!-- ... -->`) are dropped so an un-scraped
+    section reads as empty.
+    """
+    target = f"## {header}"
+    lines = content.splitlines()
+    out: list[str] = []
+    capturing = False
+    for line in lines:
+        if line.strip() == target:
+            capturing = True
+            continue
+        if capturing and line.strip().startswith("## "):
+            break
+        if capturing and not line.strip().startswith("<!--"):
+            out.append(line)
+    return "\n".join(out).strip()
+
+
 def cmd_setup_course(args: argparse.Namespace) -> int:
     course_path = config.ASSIGNMENTS_ROOT / args.course
     if not course_path.exists():
@@ -184,15 +207,21 @@ def cmd_prep(args: argparse.Namespace) -> int:
         if info_path.exists():
             course_info = frontmatter.load(info_path).content
 
+    # The Canvas ICS feed carries no assignment description, so it's scraped from
+    # the assignment page (browser-side) into this section. When present, it's
+    # the single most useful grounding signal - far better than the title alone.
+    description = _extract_section(post.content, "Assignment Details")
+
     prompt = f"""I need help preparing for this assignment.
 
 Assignment: {note_path.stem}
 Course: {course or "unknown"}
 Due: {post.get("due") or "unknown"}
 
-Current note content:
+The actual assignment description from Canvas (this is the real task - anchor
+everything to it; if it's blank, fall back to reasoning from the title):
 ---
-{post.content}
+{description or "(no description scraped yet)"}
 ---
 
 Course context (textbook/topics), if known:

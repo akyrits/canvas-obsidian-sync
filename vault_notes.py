@@ -58,6 +58,8 @@ def _render_body(assignment: CanvasAssignment) -> str:
     return (
         f"# {assignment.title}\n\n"
         f"{canvas_link}\n\n"
+        f"## Assignment Details\n"
+        f"<!-- Scraped from the Canvas assignment page; grounds `python agent.py prep` -->\n\n"
         f"## How to Approach This\n"
         f"<!-- Filled in by `python agent.py prep` -->\n\n"
         f"## Key Concepts\n"

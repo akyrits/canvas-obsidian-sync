@@ -23,25 +23,28 @@ def _require_api_key() -> None:
         )
 
 
-def _split_response(text: str) -> tuple[str, str]:
-    """Splits the model's response on the `## Outline` / `## Concepts`
-    markers the prep prompt asks for. These are distinct from the note's own
-    `## How to Approach This` / `## Key Concepts` headers - kept separate so
-    parsing the response never gets confused with the note structure.
+def _split_response(text: str) -> tuple[str, str, str]:
+    """Splits the model's response on the `## Outline` / `## Concepts` /
+    `## Resources` markers the prep prompt asks for. These are distinct from the
+    note's own `## How to Approach This` / `## Key Concepts` / `## Helpful Links`
+    headers - kept separate so parsing the response never gets confused with the
+    note structure.
     """
-    sections = {"outline": "", "concepts": ""}
+    markers = {"## Outline": "outline", "## Concepts": "concepts", "## Resources": "resources"}
+    sections = {"outline": "", "concepts": "", "resources": ""}
     current = None
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped == "## Outline":
-            current = "outline"
-            continue
-        if stripped == "## Concepts":
-            current = "concepts"
+        if stripped in markers:
+            current = markers[stripped]
             continue
         if current:
             sections[current] += line + "\n"
-    return sections["outline"].strip(), sections["concepts"].strip()
+    return (
+        sections["outline"].strip(),
+        sections["concepts"].strip(),
+        sections["resources"].strip(),
+    )
 
 
 def cmd_setup_course(args: argparse.Namespace) -> int:
@@ -197,12 +200,17 @@ Course context (textbook/topics), if known:
 {course_info or "(no course info recorded yet - run setup-course for this class)"}
 ---
 
-Give me two things:
+Give me three things:
 1. A concrete step-by-step outline for how to accomplish this assignment.
 2. A short "Key Concepts" explanation of the underlying lesson this assignment is
-   testing, tied to the course's textbook/topics where relevant. Where a real
-   external resource (Khan Academy, a specific YouTube lecture, documentation)
-   would genuinely help, search for one and link it - don't invent a URL from memory.
+   testing, tied to the course's textbook/topics where relevant.
+3. A curated "Resources" list: real, currently-working external links that would
+   genuinely help with this assignment (a specific YouTube lecture, Khan Academy
+   page, official documentation, a worked tutorial). Search the web to find and
+   verify each one - never invent or guess a URL from memory. Format each as a
+   Markdown bullet: `- [title](url) - one line on why it helps`. If you can't
+   find anything genuinely useful, write exactly `_None found._` and nothing else
+   under that header.
 
 Explain concepts entirely in your own words - do not use quotation marks or
 present any text as a direct quotation anywhere in this response. This
@@ -217,6 +225,8 @@ Format your response exactly as:
 ...
 ## Concepts
 ...
+## Resources
+...
 """
 
     client = anthropic.Anthropic()
@@ -230,17 +240,22 @@ Format your response exactly as:
         response = stream.get_final_message()
 
     text = "\n".join(block.text for block in response.content if block.type == "text")
-    outline, concepts = _split_response(text)
+    outline, concepts, resources = _split_response(text)
 
-    if not outline and not concepts:
+    if not outline and not concepts and not resources:
         # Model didn't follow the requested format - keep the output rather
         # than silently losing it.
         outline = text
         concepts = None
+        resources = None
 
     vault_write.set_section(note_path, "How to Approach This", outline)
     if concepts:
         vault_write.set_section(note_path, "Key Concepts", concepts)
+    # "Helpful Links" is machine-owned (verified web resources); the note's own
+    # "Resources" section stays user-owned for manually-embedded lecture PDFs.
+    if resources:
+        vault_write.set_section(note_path, "Helpful Links", resources)
 
     print(f"Updated: {note_path}")
     return 0

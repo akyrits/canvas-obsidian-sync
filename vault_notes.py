@@ -62,6 +62,8 @@ def _render_body(assignment: CanvasAssignment) -> str:
         f"<!-- Filled in by `python agent.py prep` -->\n\n"
         f"## Key Concepts\n"
         f"<!-- Filled in by `python agent.py prep` -->\n\n"
+        f"## Helpful Links\n"
+        f"<!-- Verified external resources, filled in by `python agent.py prep` -->\n\n"
         f"## Resources\n"
         f"<!-- Drop professor-provided PDFs in this course's Attachments/ folder and embed them here, e.g. ![[Lecture 5 Slides.pdf]] -->\n\n"
         f"## Notes\n"

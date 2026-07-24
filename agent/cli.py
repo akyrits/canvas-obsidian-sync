@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 import anthropic
 import frontmatter
@@ -14,6 +15,46 @@ from . import transcripts, vault_query, vault_write
 from .tools import get_tasks
 
 MODEL = "claude-sonnet-5"
+
+# claude-sonnet-5 pricing, per token. Introductory rates apply through
+# 2026-08-31, after which they revert to $3 / $15 per million. Web search is
+# billed per request on top of tokens. Keep these in sync with the model.
+_PRICE_IN = 2.0 / 1_000_000
+_PRICE_OUT = 10.0 / 1_000_000
+_PRICE_SEARCH = 0.01
+
+_COST_LOG = Path(__file__).resolve().parent.parent / "prep_costs.log"
+
+
+def _report_cost(response, label: str) -> float:
+    """Print and log the real dollar cost of one API response from its usage.
+
+    Reads actual token counts and web-search requests off the response rather
+    than estimating, so spend is measured, not guessed. Returns the cost so a
+    caller can accumulate a running total.
+    """
+    usage = response.usage
+    in_tok = getattr(usage, "input_tokens", 0) or 0
+    in_tok += getattr(usage, "cache_read_input_tokens", 0) or 0
+    in_tok += getattr(usage, "cache_creation_input_tokens", 0) or 0
+    out_tok = getattr(usage, "output_tokens", 0) or 0
+    stu = getattr(usage, "server_tool_use", None)
+    searches = getattr(stu, "web_search_requests", 0) if stu else 0
+
+    cost = in_tok * _PRICE_IN + out_tok * _PRICE_OUT + searches * _PRICE_SEARCH
+    print(
+        f"  cost: ${cost:.4f}  ({in_tok:,} in + {out_tok:,} out tokens, "
+        f"{searches} web search{'es' if searches != 1 else ''})"
+    )
+    try:
+        with _COST_LOG.open("a", encoding="utf-8") as fh:
+            fh.write(
+                f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}\t"
+                f"{label}\t${cost:.4f}\t{in_tok}in\t{out_tok}out\t{searches}search\n"
+            )
+    except OSError:
+        pass
+    return cost
 
 
 def _require_api_key() -> None:
@@ -267,6 +308,8 @@ Format your response exactly as:
         messages=[{"role": "user", "content": prompt}],
     ) as stream:
         response = stream.get_final_message()
+
+    _report_cost(response, f"prep: {note_path.stem}")
 
     text = "\n".join(block.text for block in response.content if block.type == "text")
     outline, concepts, resources = _split_response(text)

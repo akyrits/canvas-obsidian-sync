@@ -231,14 +231,12 @@ def cmd_new_module(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_prep(args: argparse.Namespace) -> int:
-    _require_api_key()
+_PREP_MAX_ESTIMATE = 0.30  # worst-case $/prep, so the budget cap never overshoots
 
-    note_path = vault_query.find_note(config.ASSIGNMENTS_ROOT, args.assignment)
-    if note_path is None:
-        print(f"Could not find a note matching: {args.assignment}")
-        return 1
 
+def _prep_one(note_path) -> float:
+    """Generate outline / key-concepts / links for one note and write them in.
+    Returns the dollar cost of the API call (also printed and logged)."""
     post = frontmatter.load(note_path)
     course = post.get("course")
 
@@ -309,7 +307,7 @@ Format your response exactly as:
     ) as stream:
         response = stream.get_final_message()
 
-    _report_cost(response, f"prep: {note_path.stem}")
+    cost = _report_cost(response, f"prep: {note_path.stem}")
 
     text = "\n".join(block.text for block in response.content if block.type == "text")
     outline, concepts, resources = _split_response(text)
@@ -330,6 +328,68 @@ Format your response exactly as:
         vault_write.set_section(note_path, "Helpful Links", resources)
 
     print(f"Updated: {note_path}")
+    return cost
+
+
+def cmd_prep(args: argparse.Namespace) -> int:
+    _require_api_key()
+    note_path = vault_query.find_note(config.ASSIGNMENTS_ROOT, args.assignment)
+    if note_path is None:
+        print(f"Could not find a note matching: {args.assignment}")
+        return 1
+    _prep_one(note_path)
+    return 0
+
+
+def _note_is_prepped(post) -> bool:
+    """True if the note already has real prep output (not just the placeholder)."""
+    return bool(_extract_section(post.content, "How to Approach This"))
+
+
+def cmd_prep_open(args: argparse.Namespace) -> int:
+    """Prep every open assignment in due order, stopping at a hard dollar cap.
+
+    Skips notes already prepped unless --force. The cap is enforced before each
+    call using a worst-case per-prep estimate, so total spend never exceeds it.
+    """
+    _require_api_key()
+    budget = args.budget
+
+    candidates = []
+    for p in config.ASSIGNMENTS_ROOT.rglob("*.md"):
+        try:
+            post = frontmatter.load(p)
+        except Exception:
+            continue
+        if "task" not in [str(t) for t in (post.get("tags") or [])]:
+            continue
+        if post.get("status") != "open":
+            continue
+        if not args.force and _note_is_prepped(post):
+            continue
+        candidates.append((post.get("due") or "", p))
+    candidates.sort(key=lambda x: x[0])
+
+    print(f"{len(candidates)} open assignment(s) to prep; hard budget ${budget:.2f}")
+    total = 0.0
+    done = 0
+    for due, p in candidates:
+        if total + _PREP_MAX_ESTIMATE > budget:
+            print(
+                f"Stopping before '{p.stem}': ${total:.4f} spent; the next call "
+                f"could exceed the ${budget:.2f} cap."
+            )
+            break
+        print(f"[{done + 1}] {p.stem}  (due {str(due)[:10]})")
+        try:
+            total += _prep_one(p)
+            done += 1
+        except Exception as e:
+            print(f"  ERROR: {e}")
+            if "credit balance" in str(e).lower():
+                print("  Out of API credits - stopping.")
+                break
+    print(f"Done: prepped {done}, spent ${total:.4f} of the ${budget:.2f} budget.")
     return 0
 
 
@@ -422,6 +482,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_prep = subparsers.add_parser("prep", help="Generate an outline + key concepts for an assignment")
     p_prep.add_argument("assignment", help="Assignment note name (exact or partial)")
     p_prep.set_defaults(func=cmd_prep)
+
+    p_prep_open = subparsers.add_parser(
+        "prep-open", help="Prep all open assignments in due order, stopping at a $ budget"
+    )
+    p_prep_open.add_argument(
+        "--budget", type=float, default=2.0,
+        help="Hard dollar cap for the run; stops before any call that could exceed it (default: 2.00)",
+    )
+    p_prep_open.add_argument(
+        "--force", action="store_true",
+        help="Re-prep notes that were already prepped (e.g. to pick up newly-scraped descriptions)",
+    )
+    p_prep_open.set_defaults(func=cmd_prep_open)
 
     p_ask = subparsers.add_parser("ask", help="Ask a question about your synced tasks")
     p_ask.add_argument("question")

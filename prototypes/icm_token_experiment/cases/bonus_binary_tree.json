@@ -1,0 +1,52 @@
+{
+  "name": "COP3410C Bonus Binary Tree Creation",
+  "minimum_concepts": 4,
+  "maximum_concepts": 4,
+  "assignment_difficulty": [2, 3],
+  "assignment_effort": ["small", "medium"],
+  "forbidden_solution_phrases": [
+    "here is a completed binary tree",
+    "copy this tree into your post",
+    "post the following tree"
+  ],
+  "required_topics": [
+    {
+      "id": "binary-tree-components",
+      "label": "binary-tree components and two-child structure",
+      "all": [
+        ["binary tree", "binary trees"],
+        ["at most two", "no more than two", "left and right"],
+        ["node", "nodes"],
+        ["edge", "edges", "parent", "child", "children"]
+      ]
+    },
+    {
+      "id": "internal-external-relationship",
+      "label": "internal/external counts and the full-tree condition",
+      "all": [
+        ["internal"],
+        ["external", "leaf", "leaves"],
+        ["proper", "full"],
+        ["count", "relationship", "invariant", "theorem"]
+      ]
+    },
+    {
+      "id": "depth-height-levels",
+      "label": "node depth, levels, and tree height",
+      "all": [
+        ["depth", "level", "levels"],
+        ["height"],
+        ["path", "root to leaf", "root-to-leaf", "ancestor", "maximum depth"]
+      ]
+    },
+    {
+      "id": "semantic-tree-modeling",
+      "label": "meaningful expression-tree or decision-tree modeling",
+      "all": [
+        ["expression tree", "decision tree"],
+        ["operator", "operand", "question", "outcome"],
+        ["meaning", "meaningful", "semantic", "represent", "model"]
+      ]
+    }
+  ]
+}

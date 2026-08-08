@@ -1,0 +1,6 @@
+interface:
+  display_name: "Canvas Study Analysis"
+  short_description: "Run safe sourced coursework analysis"
+  default_prompt: "Use $canvas-study-analysis to prepare and validate a sourced coursework analysis."
+policy:
+  allow_implicit_invocation: false

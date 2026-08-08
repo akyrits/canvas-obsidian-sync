@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "request_sha256": "cf4fdacaeb477361ce46b0d58351cd6ba516bcc73c0342643543e621cca6f19a",
+  "retrieved_at": "2026-07-26T22:41:16+00:00",
+  "results": [
+    {
+      "title": "DSA Binary Trees - W3Schools",
+      "url": "https://www.w3schools.com/dsa/dsa_data_binarytrees.php"
+    },
+    {
+      "title": "6 Binary Trees",
+      "url": "https://opendatastructures.org/newhtml/ods/latex/binarytrees.html"
+    },
+    {
+      "title": "Mastering Binary Trees for Beginners: A Comprehensive Guide to Understanding and Implementing Data Structures - AlgoCademy Blog",
+      "url": "https://algocademy.com/blog/mastering-binary-trees-for-beginners-a-comprehensive-guide-to-understanding-and-implementing-data-structures/"
+    },
+    {
+      "title": "ES 103: Data Structures and Algorithms 2012 Instructor - Dr Atul Gupta 1",
+      "url": "https://staff.emu.edu.tr/zekibayram/Documents/courses/CMPE231/LectureNotesSlides/Slides%206/15-Binary-trees.pdf"
+    },
+    {
+      "title": "Trees",
+      "url": "https://aofa.cs.princeton.edu/60trees/"
+    }
+  ]
+}

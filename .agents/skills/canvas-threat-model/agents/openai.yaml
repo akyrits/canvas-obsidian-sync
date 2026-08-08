@@ -1,0 +1,6 @@
+interface:
+  display_name: "Canvas Threat Model"
+  short_description: "Threat-model Canvas sync safely"
+  default_prompt: "Use $canvas-threat-model to perform a read-only threat model of this repository."
+policy:
+  allow_implicit_invocation: false

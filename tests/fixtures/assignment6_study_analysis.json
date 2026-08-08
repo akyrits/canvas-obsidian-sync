@@ -1,0 +1,241 @@
+{
+  "assignment_difficulty": {
+    "score": 5,
+    "reason": "The assignment combines terminology, quantitative structural bounds, proof, expression-tree construction, and reconstruction from two traversal orders.",
+    "confidence": 0.97
+  },
+  "assignment_effort": {
+    "level": "large",
+    "reason": "It requires several justified written responses plus three carefully labeled tree diagrams.",
+    "confidence": 0.95
+  },
+  "concepts": [
+    {
+      "name": "General Trees",
+      "summary": "A tree is a hierarchical structure with one root; every other node has one parent and may have zero or more children.",
+      "why_this_matters": {
+        "foundational": "Tree vocabulary is the language needed to reason precisely about binary trees, search trees, heaps, syntax trees, and many later algorithms.",
+        "practical": "Hierarchies such as file systems, user-interface elements, organizational charts, and class inheritance are naturally represented as trees.",
+        "decision_making": "Recognizing hierarchical rather than sequential structure helps select algorithms that navigate parent-child relationships instead of scanning a flat list.",
+        "personal_curriculum": "This extends the linear structures from arrays, linked lists, stacks, and queues into nonlinear data organization used throughout computer science, data science, and AI."
+      },
+      "difficulty": {
+        "score": 2,
+        "reason": "The definitions are introductory, but accuracy depends on consistently identifying relationships from a diagram.",
+        "confidence": 0.98
+      },
+      "relationships": [
+        {"type": "prerequisite_of", "target": "Tree Depth, Height, and Levels"},
+        {"type": "prerequisite_of", "target": "Proper Binary Trees"},
+        {"type": "related_to", "target": "Tree Traversal"}
+      ],
+      "examples": [
+        "A directory is an internal node when it contains children; a file is typically an external node or leaf.",
+        "A course can be the root of a hierarchy containing modules, lessons, and activities."
+      ],
+      "resources": [
+        {
+          "title": "M11A - General Trees",
+          "locator": "M11A - General Trees, PDF page 5",
+          "why_useful": "Provides the course's terminology and directory-tree example.",
+          "accessed_at": "2026-07-24"
+        }
+      ],
+      "source_citations": [
+        "M11A - General Trees, PDF page 5",
+        "Goodrich - Chapter 8 Trees, PDF page 324"
+      ]
+    },
+    {
+      "name": "Tree Depth, Height, and Levels",
+      "summary": "A node's depth is the number of edges from the root to that node; a tree's height is the maximum node depth, and nodes with equal depth form a level.",
+      "why_this_matters": {
+        "foundational": "Height links a tree's shape to the cost of operations that follow root-to-leaf paths.",
+        "practical": "Depth controls nesting in file systems and syntax trees, while height influences recursion depth and lookup performance.",
+        "decision_making": "Comparing height with node count reveals whether a tree is broad and balanced or narrow and path-like.",
+        "personal_curriculum": "It connects structural diagrams to Big-O analysis and prepares you to study balanced search trees and heaps."
+      },
+      "difficulty": {
+        "score": 3,
+        "reason": "The arithmetic is simple, but conventions must be applied consistently and then generalized into bounds.",
+        "confidence": 0.97
+      },
+      "relationships": [
+        {"type": "builds_on", "target": "General Trees"},
+        {"type": "used_in", "target": "Tree Reconstruction from Traversals"},
+        {"type": "related_to", "target": "Proper Binary Trees"}
+      ],
+      "examples": [
+        "The root has depth 0, its children have depth 1, and its grandchildren have depth 2.",
+        "A single-node tree has height 0 under the edge-count convention used in the course."
+      ],
+      "resources": [
+        {
+          "title": "Goodrich Chapter 8 - Trees",
+          "locator": "Goodrich - Chapter 8 Trees, PDF page 330",
+          "why_useful": "Develops depth and height definitions and their recursive computation.",
+          "accessed_at": "2026-07-24"
+        }
+      ],
+      "source_citations": [
+        "Goodrich - Chapter 8 Trees, PDF page 330"
+      ]
+    },
+    {
+      "name": "Proper Binary Trees",
+      "summary": "A proper binary tree is an ordered tree in which every node has either zero children or exactly two children.",
+      "why_this_matters": {
+        "foundational": "The zero-or-two-child invariant makes exact relationships among internal nodes, external nodes, height, and total node count provable.",
+        "practical": "Decision trees and fully binary arithmetic expression trees often have this shape because each internal decision or binary operator has two outcomes or operands.",
+        "decision_making": "Structural bounds let you estimate memory, possible leaves, and path length before choosing or analyzing a representation.",
+        "personal_curriculum": "This is an early example of using an invariant to prove performance and size bounds, a recurring technique in algorithms and AI tree search."
+      },
+      "difficulty": {
+        "score": 5,
+        "reason": "Understanding the definition is straightforward, but proving tight lower and upper bounds and identifying equality cases requires careful extremal reasoning.",
+        "confidence": 0.98
+      },
+      "relationships": [
+        {"type": "builds_on", "target": "General Trees"},
+        {"type": "prerequisite_of", "target": "Arithmetic Expression Trees"},
+        {"type": "used_in", "target": "Tree Reconstruction from Traversals"},
+        {"type": "contrasts_with", "target": "General Trees"}
+      ],
+      "examples": [
+        "A decision node with exactly yes and no branches is an internal node in a proper binary decision tree.",
+        "A maximally sparse proper binary tree extends one internal child at each level while giving that node a leaf sibling."
+      ],
+      "resources": [
+        {
+          "title": "M11B - Binary Trees",
+          "locator": "M11B - Binary Trees, PDF page 11",
+          "why_useful": "Uses decision trees and structural properties to motivate proper binary trees.",
+          "accessed_at": "2026-07-24"
+        }
+      ],
+      "source_citations": [
+        "M11B - Binary Trees, PDF page 11",
+        "Goodrich - Chapter 8 Trees, PDF page 333"
+      ]
+    },
+    {
+      "name": "Tree Traversal",
+      "summary": "A traversal systematically visits every node; preorder visits root-left-right, while inorder visits left-root-right for a binary tree.",
+      "why_this_matters": {
+        "foundational": "Traversal order turns a hierarchical structure into an ordered sequence that can be processed, serialized, compared, or reconstructed.",
+        "practical": "Compilers walk syntax trees, file tools visit directory trees, and search algorithms inspect decision or game trees using traversal strategies.",
+        "decision_making": "The required output determines the traversal: preorder exposes a root before its descendants, while inorder places a binary root between its subtrees.",
+        "personal_curriculum": "Traversal combines recursion, stacks, and tree structure and leads directly to depth-first search in graph algorithms and AI."
+      },
+      "difficulty": {
+        "score": 4,
+        "reason": "Executing one traversal is moderate; reconstructing a unique tree from two traversal orders requires recursive partitioning and consistency checks.",
+        "confidence": 0.98
+      },
+      "relationships": [
+        {"type": "applies_to", "target": "General Trees"},
+        {"type": "used_in", "target": "Arithmetic Expression Trees"},
+        {"type": "prerequisite_of", "target": "Tree Reconstruction from Traversals"}
+      ],
+      "examples": [
+        "In preorder, the first symbol identifies the root of the current subtree.",
+        "In inorder, the root splits the sequence into the nodes belonging to the left and right subtrees."
+      ],
+      "resources": [
+        {
+          "title": "Goodrich Chapter 8 - Tree traversal",
+          "locator": "Goodrich - Chapter 8 Trees, PDF page 353",
+          "why_useful": "Provides the indexed traversal definitions used by this analysis.",
+          "accessed_at": "2026-07-24"
+        }
+      ],
+      "source_citations": [
+        "Goodrich - Chapter 8 Trees, PDF page 353"
+      ]
+    },
+    {
+      "name": "Arithmetic Expression Trees",
+      "summary": "An arithmetic expression tree is a proper binary tree whose internal nodes are binary operators and whose leaves are operands.",
+      "why_this_matters": {
+        "foundational": "It demonstrates how syntax and evaluation order can be represented structurally rather than relying on punctuation alone.",
+        "practical": "Parsers, compilers, query planners, calculators, and symbolic algebra tools represent expressions with syntax trees.",
+        "decision_making": "The tree makes precedence and grouping explicit and supports choosing preorder, inorder, or postorder forms for different processing tasks.",
+        "personal_curriculum": "It connects data structures with programming-language implementation, recursion, and AI systems that manipulate symbolic expressions."
+      },
+      "difficulty": {
+        "score": 4,
+        "reason": "Each binary operation is simple, but deeply nested parentheses require disciplined decomposition from the outermost operator inward.",
+        "confidence": 0.98
+      },
+      "relationships": [
+        {"type": "example_of", "target": "Proper Binary Trees"},
+        {"type": "used_in", "target": "Tree Traversal"},
+        {"type": "builds_on", "target": "Proper Binary Trees"}
+      ],
+      "examples": [
+        "For a binary operation, the operator is the parent and its two operand expressions become the left and right subtrees.",
+        "Postorder traversal naturally gives postfix notation and supports bottom-up evaluation."
+      ],
+      "resources": [
+        {
+          "title": "Goodrich Chapter 8 - Arithmetic expression trees",
+          "locator": "Goodrich - Chapter 8 Trees, PDF page 334",
+          "why_useful": "Defines operators as internal nodes and operands as leaves using the course's convention.",
+          "accessed_at": "2026-07-24"
+        }
+      ],
+      "source_citations": [
+        "M11B - Binary Trees, PDF page 5",
+        "Goodrich - Chapter 8 Trees, PDF page 334"
+      ]
+    },
+    {
+      "name": "Tree Reconstruction from Traversals",
+      "summary": "A binary tree with distinct labels can be reconstructed from preorder and inorder traversals by taking the preorder root and recursively partitioning the inorder sequence around it.",
+      "why_this_matters": {
+        "foundational": "Reconstruction tests whether traversal orders are understood as structural constraints rather than memorized visit sequences.",
+        "practical": "The same recursive partitioning idea appears in serialization, parser recovery, divide-and-conquer algorithms, and restoring hierarchical data.",
+        "decision_making": "It shows which observations are sufficient to identify structure and why one traversal alone is generally ambiguous.",
+        "personal_curriculum": "It combines recursion, sequence partitioning, invariants, and validation—skills that recur in algorithms, data processing, and AI reasoning."
+      },
+      "difficulty": {
+        "score": 5,
+        "reason": "The reconstruction must satisfy two sequences simultaneously at every recursive subtree, so one mistaken partition propagates through the entire tree.",
+        "confidence": 0.97
+      },
+      "relationships": [
+        {"type": "builds_on", "target": "Tree Traversal"},
+        {"type": "applies_to", "target": "Proper Binary Trees"},
+        {"type": "related_to", "target": "Arithmetic Expression Trees"}
+      ],
+      "examples": [
+        "Take the first preorder item as the root, locate it in inorder, and use the left partition's size to split the remaining preorder sequence.",
+        "After constructing each subtree, regenerate both traversals to verify the result."
+      ],
+      "resources": [
+        {
+          "title": "Goodrich Chapter 8 - Tree traversals",
+          "locator": "Goodrich - Chapter 8 Trees, PDF page 353",
+          "why_useful": "Provides the traversal definitions needed to justify each reconstruction step.",
+          "accessed_at": "2026-07-24"
+        }
+      ],
+      "source_citations": [
+        "Goodrich - Chapter 8 Trees, PDF page 353"
+      ]
+    }
+  ],
+  "study_guidance": {
+    "approach": [
+      "Create a terminology checklist from the directory diagram: root, parent, child, internal, external, ancestor, descendant, sibling, subtree, depth, height, and level.",
+      "Answer the diagram questions by tracing edges explicitly; annotate each path so depth and ancestor counts are not confused with node counts.",
+      "For each proper-binary-tree bound, draw the sparsest and fullest shapes at a small height, identify the pattern, and then justify why no valid tree can go beyond those extremes.",
+      "Derive the height bounds from the relationships between internal nodes, external nodes, and total nodes; keep the lower-bound and upper-bound equality shapes separate.",
+      "Build the expression tree from the outermost binary operation inward, treating every parenthesized subexpression as a subtree, then verify it with an inorder reading.",
+      "Reconstruct the traversal tree recursively: choose the preorder root, split inorder around that root, partition the remaining preorder sequence by subtree size, and repeat.",
+      "Verify every drawing by regenerating the requested traversal or expression and by checking that each internal node in a proper binary tree has exactly two children."
+    ],
+    "diagnostic_offer": "Familiarity is currently unknown. When you are ready, ask for a short voice-friendly diagnostic covering terminology, structural bounds, expression trees, and traversal reconstruction."
+  },
+  "expert_solution_markdown": null
+}

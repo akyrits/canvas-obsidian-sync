@@ -1,0 +1,52 @@
+{
+  "name": "COP3834 Unit 9 Activity Animating a Progress Bar",
+  "minimum_concepts": 4,
+  "maximum_concepts": 4,
+  "assignment_difficulty": [2, 3],
+  "assignment_effort": ["small", "medium"],
+  "forbidden_solution_phrases": [
+    "setInterval(stepProgressAnimation",
+    "progressBar.style.width = percent",
+    "const person = { name: nameInput.value",
+    "function reset() { percent = 0"
+  ],
+  "required_topics": [
+    {
+      "id": "interval-lifecycle",
+      "label": "repeating timer lifecycle and cleanup",
+      "all": [
+        ["setinterval"],
+        ["clearinterval"],
+        ["interval id", "timer id", "interval identifier", "timer handle", "returned identifier", "id returned", "returned id"]
+      ]
+    },
+    {
+      "id": "animation-state",
+      "label": "progress state, completion conditions, and reset behavior",
+      "all": [
+        ["percent", "progress state", "counter"],
+        ["increment", "advance", "update", "tracking", "changing", "mutation", "cycles"],
+        ["reset", "restart"],
+        ["100", "completion", "complete", "boundary", "stop condition"]
+      ]
+    },
+    {
+      "id": "dom-style-mutation",
+      "label": "DOM element CSS-width updates",
+      "all": [
+        ["dom", "element"],
+        ["style width", "style property", "css width", "inline style"],
+        ["percent", "percentage"]
+      ]
+    },
+    {
+      "id": "objects-and-form-data",
+      "label": "object literals and personalization from form data",
+      "all": [
+        ["object literal", "object"],
+        ["property", "properties", "dot notation", "property access", "named access", "named properties", "form fields"],
+        ["form data", "form input", "input value", "user input", "personalize", "personalization"]
+      ]
+    }
+  ]
+}

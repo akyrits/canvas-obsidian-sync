@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "request_sha256": "53d5929e427b75d7ed1f7c0d947b6cdcaa6bd32cb597f3aac5c93594dfee967e",
+  "retrieved_at": "2026-07-26T12:00:00+00:00",
+  "results": [
+    {
+      "title": "Synthetic tree traversal reference",
+      "url": "https://example.edu/data-structures/tree-traversal",
+      "snippet": "A normalized fixture used only to verify the token-free research path."
+    },
+    {
+      "title": "Synthetic binary tree reference",
+      "url": "https://example.org/computer-science/binary-trees",
+      "snippet": "A second normalized fixture used only for deterministic replay tests."
+    }
+  ]
+}

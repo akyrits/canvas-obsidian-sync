@@ -1,0 +1,44 @@
+{
+  "name": "COP3410C Assignment 6",
+  "minimum_concepts": 6,
+  "maximum_concepts": 6,
+  "assignment_difficulty": [4, 5],
+  "assignment_effort": ["large", "very_large"],
+  "forbidden_solution_phrases": [
+    "minimum external nodes equals h plus 1",
+    "maximum external nodes equals 2 to the h",
+    "root is E"
+  ],
+  "required_topics": [
+    {
+      "id": "tree-vocabulary",
+      "label": "general-tree terminology and relationships",
+      "all": [["root"], ["parent", "child", "ancestor", "descendant", "sibling", "subtree"]]
+    },
+    {
+      "id": "depth-height-levels",
+      "label": "depth and height",
+      "all": [["depth"], ["height"]]
+    },
+    {
+      "id": "proper-binary-bounds",
+      "label": "proper-binary-tree bounds",
+      "all": [["proper binary"], ["external", "leaf", "leaves"], ["bound", "minimum", "maximum"]]
+    },
+    {
+      "id": "traversal",
+      "label": "preorder and inorder traversal",
+      "all": [["preorder"], ["inorder"]]
+    },
+    {
+      "id": "expression-tree",
+      "label": "arithmetic expression trees",
+      "all": [["expression tree", "expression trees"], ["operator", "operand"]]
+    },
+    {
+      "id": "traversal-reconstruction",
+      "label": "tree reconstruction from preorder and inorder",
+      "all": [["reconstruct", "reconstruction", "partition", "split"], ["preorder"], ["inorder"]]
+    }
+  ]
+}

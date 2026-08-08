@@ -1,6 +1,9 @@
 .env
+.env.*
 __pycache__/
 *.pyc
 .venv/
 venv/
 prep_costs.log
+analysis_runs.log
+research-cache/

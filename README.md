@@ -332,6 +332,27 @@ references without invoking a model.
   transport-level schema enforcement, and testing through Anthropic validates
   the code path but not provider independence — a genuine third-party
   OpenAI-compatible endpoint is still unexercised.
+- **The smoke test found a real defect.** `OpenAICompatibleAdapter` hardcoded
+  `temperature: 0.1`, which current Claude models reject outright
+  (`` `temperature` is deprecated for this model ``, HTTP 400) — making every
+  Claude 5-family model unreachable through this adapter while older models
+  still worked. Temperature is now opt-in via `MODEL_TEMPERATURE` and omitted
+  by default. `tests/test_providers.py` covers the request body directly; the
+  saved-response suite could never have caught this, because it never builds a
+  live request.
+- **Full-pipeline run (2026-08-08), `claude-sonnet-5` at default effort `high`:**
+  transport carried a real Study analysis end to end — 6,693 input / 7,605
+  output tokens, `stop_reason: stop`, 62.1s, ≈`$0.09`. It was then correctly
+  **rejected at the citation gate**: the model produced citations to PDF pages
+  that were not among the 10 evidence excerpts selected for that call
+  (`selected_evidence: 10` of `available_evidence: 32`, `input_truncated: true`).
+  The guarded commit held — `files_changed: []`, vault byte-identical, audit
+  still 114/114. So the adapter is proven, but this model/prompt combination is
+  not yet fit for unattended Study runs: the citation discipline that the
+  Anthropic adapter satisfies does not transfer for free.
+- **Known gap:** `estimated_cost` is `null` for this provider/model pair — the
+  cost self-reporting has no pricing entry for models reached via
+  `openai-compatible`, so `prep`'s dollar figures under-report on that path.
 - Expert mode remains interface-tested but its real-vault rollout is explicitly
   deferred until all non-Expert implementation is complete.
 - The token-free diagnostic flow is voice-agent callable and has a validated

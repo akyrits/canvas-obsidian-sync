@@ -210,24 +210,38 @@ class OpenAICompatibleAdapter:
     name = "openai-compatible"
     uses_transport_schema = False
 
-    def __init__(self, base_url: str, model: str, api_key: str | None = None):
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        api_key: str | None = None,
+        temperature: float | None = None,
+    ):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key
+        # Opt-in, and omitted by default: newer models reject any sampling
+        # parameter outright ("`temperature` is deprecated for this model" ->
+        # HTTP 400), so hardcoding one makes whole model generations
+        # unreachable. Older endpoints that want a low temperature can still
+        # ask for one via MODEL_TEMPERATURE.
+        self.temperature = temperature
 
     def generate_json(self, prompt: str, max_output_tokens: int) -> ModelReply:
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_output_tokens,
+        }
+        if self.temperature is not None:
+            payload["temperature"] = self.temperature
         response = requests.post(
             f"{self.base_url}/chat/completions",
             headers=headers,
-            json={
-                "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_output_tokens,
-                "temperature": 0.1,
-            },
+            json=payload,
             timeout=180,
         )
         response.raise_for_status()
@@ -293,7 +307,17 @@ def adapter_from_env(response_file: Path | None = None) -> ModelAdapter:
         base_url = os.environ.get("MODEL_BASE_URL", "").strip()
         if not base_url:
             raise RuntimeError("MODEL_BASE_URL is required for an OpenAI-compatible provider")
+        raw_temperature = os.environ.get("MODEL_TEMPERATURE", "").strip()
+        if raw_temperature:
+            try:
+                temperature = float(raw_temperature)
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"MODEL_TEMPERATURE must be a number, got {raw_temperature!r}"
+                ) from exc
+        else:
+            temperature = None
         return OpenAICompatibleAdapter(
-            base_url, model, os.environ.get("MODEL_API_KEY")
+            base_url, model, os.environ.get("MODEL_API_KEY"), temperature=temperature
         )
     raise RuntimeError(f"Unsupported MODEL_PROVIDER: {provider}")

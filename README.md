@@ -321,7 +321,17 @@ references without invoking a model.
 **Do not overlook:**
 
 - Anthropic structured-output calls have been smoke-tested. OpenAI-compatible
-  live generation remains untested.
+  live generation is now smoke-tested too (2026-08-08): `OpenAICompatibleAdapter`
+  was exercised against Anthropic's OpenAI SDK compatibility endpoint
+  (`https://api.anthropic.com/v1/`, `claude-haiku-4-5`, 48 in / 17 out,
+  `$0.000133`). Auth, `max_tokens`, `temperature`, response shape, usage
+  accounting, and `_parse_json` all verified; `prompt_tokens_details` and
+  `completion_tokens_details` are always empty on that endpoint, which the
+  adapter already handles. Two caveats: the compatibility layer ignores
+  `response_format`, so valid JSON still depends on the prompt rather than
+  transport-level schema enforcement, and testing through Anthropic validates
+  the code path but not provider independence — a genuine third-party
+  OpenAI-compatible endpoint is still unexercised.
 - Expert mode remains interface-tested but its real-vault rollout is explicitly
   deferred until all non-Expert implementation is complete.
 - The token-free diagnostic flow is voice-agent callable and has a validated

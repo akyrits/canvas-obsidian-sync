@@ -86,6 +86,11 @@ class EvidenceLocator:
             normalized(self.source_title),
             normalized(Path(self.source_file).stem),
             normalized(Path(self.source_file).name),
+            # The evidence heading the model is shown renders as
+            # "Title (file.pdf)", and the prompt tells it to copy that heading,
+            # so accept it verbatim alongside the title- and file-only forms.
+            normalized(f"{self.source_title} ({self.source_file})"),
+            normalized(f"{self.source_title} ({Path(self.source_file).stem})"),
         }
         if supplied_source not in accepted_sources:
             return False

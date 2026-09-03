@@ -247,9 +247,18 @@ class _VaultIndex:
             or source_relative.parts[0].casefold() != "school"
         ):
             return _Resolution("unresolved")
-        attachment_link = (
-            self.root / source_relative.parts[0] / source_relative.parts[1] / "Attachments"
-        )
+        # Walk up from the note to the nearest ancestor holding an Attachments
+        # junction rather than assuming the course sits directly under School/.
+        # Archived courses are nested by academic year and term, so the course
+        # folder is not always School/<course>.
+        attachment_link = None
+        for depth in range(len(source_relative.parts) - 1, 0, -1):
+            candidate_link = self.root.joinpath(*source_relative.parts[:depth]) / "Attachments"
+            if candidate_link.is_dir() and _is_link_or_junction(candidate_link):
+                attachment_link = candidate_link
+                break
+        if attachment_link is None:
+            return _Resolution("unresolved")
         if not attachment_link.is_dir() or not _is_link_or_junction(attachment_link):
             return _Resolution("unresolved")
         attachment_root = attachment_link.resolve()
